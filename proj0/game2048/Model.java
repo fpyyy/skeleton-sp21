@@ -5,7 +5,7 @@ import java.util.Observable;
 
 
 /** The state of a game of 2048.
- *  @author TODO: YOUR NAME HERE
+ *  @FluppyFR
  */
 public class Model extends Observable {
     /** Current contents of the board. */
@@ -114,16 +114,55 @@ public class Model extends Observable {
         // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.
 
+        board.setViewingPerspective(side);
+
+        for (int col =0; col < board.size(); col ++){
+            if (moveOneCol(col)){
+                changed = true;
+            }
+        }
+        board.setViewingPerspective(Side.NORTH);
         checkGameOver();
         if (changed) {
             setChanged();
         }
         return changed;
     }
-
     /** Checks if the game is over and sets the gameOver variable
      *  appropriately.
      */
+    public boolean moveOneCol(int col){
+        //if tile is merged, it should not be merged again, so I record the row under the last merged tile as maxRow
+        //any tile whose row > maxRow should not be modified, they all have been merged
+        int maxRow = board.size() - 1;
+        boolean changed = false;
+        for(int row = board.size() - 1;row >= 0;row --){
+            Tile t = board.tile(col,row);
+            //skip when it's a null tile
+            if (t == null){
+                continue;
+            }
+            //merge if there's a tile with same value ABOVE
+            //r locates row of the first valid tile
+            int r;
+            for (r = row + 1; r < board.size();r++){
+                if(board.tile(col,r) != null){
+                    break;
+                }
+            }
+            if (r <= maxRow && t.value() == board.tile(col,r).value()){
+                score += 2*t.value();
+                board.move(col,r,t);
+                changed = true;
+                maxRow = r - 1;
+            }
+            else if (r - 1 > row){
+                board.move(col,r - 1,t);
+                changed = true;
+            }
+        }
+        return changed;
+    }
     private void checkGameOver() {
         gameOver = checkGameOver(board);
     }
@@ -138,6 +177,13 @@ public class Model extends Observable {
      * */
     public static boolean emptySpaceExists(Board b) {
         // TODO: Fill in this function.
+        for(int col = 0;col < b.size(); col ++){
+            for (int row = 0; row < b.size(); row ++){
+                if (b.tile(col,row) == null){
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -148,6 +194,13 @@ public class Model extends Observable {
      */
     public static boolean maxTileExists(Board b) {
         // TODO: Fill in this function.
+        for(int col = 0;col < b.size(); col ++){
+            for (int row = 0; row < b.size(); row ++){
+                if (b.tile(col,row) != null && b.tile(col,row).value() == MAX_PIECE){
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -159,6 +212,23 @@ public class Model extends Observable {
      */
     public static boolean atLeastOneMoveExists(Board b) {
         // TODO: Fill in this function.
+        if (emptySpaceExists(b)){
+            return true;
+        }else {
+            for(int col = 0;col < b.size(); col ++){
+                for (int row = 0; row < b.size(); row ++){
+                    int currentValue = b.tile(col,row).value();
+                    if (
+                        (col + 1 < b.size() && b.tile(col + 1, row).value() == currentValue)||
+                        (col - 1 > 0 && b.tile(col - 1, row).value() == currentValue)||
+                        (row + 1 < b.size() && b.tile(col, row + 1).value() == currentValue)||
+                        (row - 1 > 0 && b.tile(col, row - 1).value() == currentValue)
+                    ){
+                        return true;
+                    }
+                }
+            }
+        }
         return false;
     }
 
